@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chart AI Agent</title>
+<style>
+:root{--bg:#0b0e14;--panel:#121722;--line:#1f2736;--text:#e6ebf5;--mute:#7d8aa3;--buy:#22c55e;--sell:#ef4444;--wait:#f59e0b;--acc:#3b82f6}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:radial-gradient(900px 500px at 0 -10%,#18264a66,transparent 60%),var(--bg);
+  padding:max(16px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom))}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+.wrap{max-width:1040px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 20px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+.logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:900;color:#06101f;background:linear-gradient(135deg,#3b82f6,#22c55e)}
+.status{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--buy);box-shadow:0 0 10px var(--buy)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media(max-width:840px){.grid{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,#151c2a,var(--panel));border:1px solid var(--line);border-radius:16px;padding:18px}
+.card+.card{margin-top:16px}
+h3{margin:0 0 14px;font-size:12px;text-transform:uppercase;letter-spacing:1.3px;color:var(--mute);font-weight:700}
+h4{margin:16px 0 6px;font-size:13px;color:var(--mute);font-weight:600}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.f{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mute);flex:1;min-width:130px}
+input,select{background:#0d1320;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px;font:inherit;outline:none;width:100%}
+input:focus,select:focus{border-color:var(--acc)}
+.drop{margin-top:12px;border:1.5px dashed #2a3650;border-radius:14px;padding:28px 14px;text-align:center;cursor:pointer;color:var(--mute);background:#0d1320;transition:.2s}
+.drop:hover,.drop.on{border-color:var(--acc);background:#0f1a2e;color:var(--text)}
+.drop b{color:var(--text)}
+.meta{display:flex;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--mute)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:10px}
+.th{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1320}
+.th img{width:100%;height:96px;object-fit:cover;display:block}
+.th select{border:0;border-top:1px solid var(--line);border-radius:0;padding:8px;font-weight:600}
+.th button{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;cursor:pointer}
+.btn{width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;font-weight:700;font-size:15px;color:#06101f;cursor:pointer;background:linear-gradient(135deg,#60a5fa,#22c55e)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.ghost{margin-top:14px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);cursor:pointer;font:inherit;font-size:13px}
+.loading{margin-top:12px;font-size:13px;color:var(--mute);display:flex;align-items:center;gap:10px}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid #2a3650;border-top-color:var(--acc);animation:s .8s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+.empty{color:var(--mute);text-align:center;padding:40px 10px;font-size:14px}
+.bias{font-size:34px;font-weight:800;letter-spacing:.5px}
+.bias.BUY{color:var(--buy)}.bias.SELL{color:var(--sell)}.bias.WAIT{color:var(--wait)}
+.confrow{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin-top:6px}
+.confrow b{color:var(--text)}
+.meter{height:6px;background:#1b2436;border-radius:6px;overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--buy));transition:width .6s}
+.levels{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0}
+@media(max-width:600px){.levels{grid-template-columns:repeat(2,1fr)}}
+.lv{background:#0d1320;border:1px solid var(--line);border-radius:10px;padding:10px 6px;text-align:center}
+.lv small{display:block;color:var(--mute);font-size:10px;text-transform:uppercase;letter-spacing:.8px}
+.lv span{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-weight:600;font-size:13px;word-break:break-all}
+.setup{margin:0;font-size:14px}
+ul{margin:4px 0;padding-left:18px;font-size:14px}
+li{margin:5px 0}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:600px){.kv{grid-template-columns:1fr}}
+.kv small{color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.8px}
+.kv p{margin:4px 0 0;font-size:14px}
+.warn{color:var(--wait)}
+.hi{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:10px 12px;margin-top:8px;border:1px solid var(--line);border-radius:10px;background:#0d1320;color:var(--text);cursor:pointer;font:inherit;text-align:left}
+.hi b.BUY{color:var(--buy)}.hi b.SELL{color:var(--sell)}.hi b.WAIT{color:var(--wait)}
+.hi span{color:var(--mute);font-size:12px}
+.mute{color:var(--mute)}
+.disc{margin-top:18px;font-size:12px;color:var(--mute);text-align:center}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#1f2736;border:1px solid #2d3850;padding:10px 16px;border-radius:12px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;max-width:90vw;z-index:9}
+#toast.on{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="logo">AI</div>Chart AI Agent</div>
+    <div class="status"><span class="dot"></span>OpenAI Vision · SMC &amp; Supply Demand</div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h3>1 · Input Chart</h3>
+      <div class="row">
+        <label class="f">Pair<input id="pair" value="XAUUSD" autocomplete="off"></label>
+        <label class="f">Gaya<select id="style"><option>Scalping</option><option>Intraday</option><option>Swing</option></select></label>
+      </div>
+      <div class="drop" id="dz">
+        <b>Klik, drag, atau paste</b> screenshot chart<br>
+        <small>Maks 4 gambar · urutan default M30 → M15 → M5 → M3</small>
+      </div>
+      <input type="file" id="file" accept="image/*" multiple hidden>
+      <div class="meta"><span id="count">0 / 4 gambar</span><span>Atur TF tiap gambar</span></div>
+      <div class="thumbs" id="thumbs"></div>
+      <button class="btn" id="go" disabled>Analisa Chart</button>
+      <div class="loading" id="loading" hidden><span class="spin"></span>Membaca struktur, liquidity &amp; FVG…</div>
+    </section>
+
+    <section class="card">
+      <h3>2 · Hasil Analisa</h3>
+      <div class="empty" id="empty">Unggah chart, atur timeframe, lalu klik <b>Analisa Chart</b>.</div>
+      <div id="res" hidden>
+        <div class="bias" id="bias"></div>
+        <div class="confrow"><span>Confidence</span><b id="conf" class="mono"></b></div>
+        <div class="meter"><i id="meter"></i></div>
+        <div class="levels" id="lv"></div>
+        <p class="setup" id="setup"></p>
+        <h4>Alasan</h4>
+        <ul id="reasons"></ul>
+        <div class="kv">
+          <div><small>Invalidasi</small><p id="inv"></p></div>
+          <div><small>Sinyal exit</small><p id="exit"></p></div>
+        </div>
+        <h4>Catatan</h4>
+        <ul class="warn" id="warns"></ul>
+        <button class="ghost" id="copy">Salin ringkasan</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h3>3 · Riwayat (20 terakhir, tersimpan di browser ini)</h3>
+    <div id="hist"></div>
+  </section>
+
+  <p class="disc">Hasil AI adalah alat bantu analisa, bukan jaminan profit. Keputusan entry dan manajemen risiko tetap di tangan trader.</p>
+</div>
+<div id="toast"></div>
+
+<script>
+const API = '/api/analyze';
+const TFS = ['M1','M3','M5','M15','M30','H1','H4','D1'];
+const DEFAULT_TF = ['M30','M15','M5','M3'];
+const KEY = 'chartAgentHistory';
+let slots = [];
+let busy = false;
+let last = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('on'), 3800);
+}
+
+function compress(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * s);
+      c.height = Math.round(img.height * s);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Gambar tidak bisa dibaca')); };
+    img.src = url;
+  });
+}
+
+async function addFiles(files){
+  for (const f of [...files]){
+    if (slots.length >= 4){ toast('Maksimal 4 gambar'); break; }
+    if (!f.type.startsWith('image/')) continue;
+    try {
+      slots.push({ data: await compress(f), tf: DEFAULT_TF[slots.length] || 'M5' });
+    } catch (e) { toast(e.message); }
+  }
+  renderSlots();
+}
+
+function rm(i){ slots.splice(i, 1); renderSlots(); }
+
+function renderSlots(){
+  $('thumbs').innerHTML = slots.map((s, i) => `
+    <div class="th">
+      <img src="${s.data}" alt="Chart ${i + 1}">
+      <button title="Hapus" onclick="rm(${i})">✕</button>
+      <select onchange="slots[${i}].tf=this.value">
+        ${TFS.map(t => `<option ${t === s.tf ? 'selected' : ''}>${t}</option>`).join('')}
+      </select>
+    </div>`).join('');
+  $('count').textContent = `${slots.length} / 4 gambar`;
+  $('go').disabled = !slots.length || busy;
+}
+
+async function analyze(){
+  if (busy || !slots.length) return;
+  busy = true;
+  $('go').disabled = true;
+  $('go').textContent = 'Menganalisa…';
+  $('loading').hidden = false;
+  const pair = ($('pair').value || 'XAUUSD').trim().toUpperCase();
+  try {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pair, style: $('style').value, images: slots })
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Gagal menganalisa');
+    show({ ...j, pair: j.pair || pair });
+    save({ at: Date.now(), ...j, pair: j.pair || pair });
+  } catch (e) {
+    toast(e.message);
+  }
+  busy = false;
+  $('go').textContent = 'Analisa Chart';
+  $('loading').hidden = true;
+  $('go').disabled = !slots.length;
+}
+
+function show(j){
+  const bias = ['BUY','SELL','WAIT'].includes(String(j.bias).toUpperCase()) ? String(j.bias).toUpperCase() : 'WAIT';
+  const f = v => (v === null || v === undefined || v === '') ? '—' : v;
+  last = { ...j, bias };
+  $('empty').hidden = true;
+  $('res').hidden = false;
+  $('bias').className = 'bias ' + bias;
+  $('bias').textContent = bias + (j.pair ? ' · ' + j.pair : '');
+  $('conf').textContent = (j.confidence ?? '—') + '%';
+  $('meter').style.width = Math.min(100, Math.max(0, +j.confidence || 0)) + '%';
+  $('lv').innerHTML = [['Entry', j.entry], ['SL', j.sl], ['TP1', j.tp1], ['TP2', j.tp2], ['RR', j.rr]]
+    .map(([k, v]) => `<div class="lv"><small>${k}</small><span>${esc(f(v))}</span></div>`).join('');
+  $('setup').textContent = j.setup || '';
+  $('reasons').innerHTML = (j.reasons || []).map(x => `<li>${esc(x)}</li>`).join('');
+  $('inv').textContent = j.invalidation || '—';
+  $('exit').textContent = j.exit_signal || '—';
+  $('warns').innerHTML = (j.warnings || []).map(x => `<li>${esc(x)}</li>`).join('');
+  $('res').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+$('copy').onclick = () => {
+  if (!last) return;
+  const j = last;
+  const txt = `${j.bias} ${j.pair || ''} | Entry ${j.entry ?? '-'} | SL ${j.sl ?? '-'} | TP1 ${j.tp1 ?? '-'} | TP2 ${j.tp2 ?? '-'} | RR ${j.rr ?? '-'}\n${j.setup || ''}`;
+  navigator.clipboard.writeText(txt).then(() => toast('Ringkasan disalin'), () => toast('Gagal menyalin'));
+};
+
+const hist = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
+function save(item){
+  localStorage.setItem(KEY, JSON.stringify([item, ...hist()].slice(0, 20)));
+  renderHist();
+}
+function renderHist(){
+  const h = hist();
+  $('hist').innerHTML = h.length
+    ? h.map((x, i) => `<button class="hi" onclick="openHist(${i})">
+        <span><b class="${['BUY','SELL','WAIT'].includes(x.bias) ? x.bias : 'WAIT'}">${esc(x.bias)}</b> &nbsp;${esc(x.pair || '')} · Entry ${esc(x.entry ?? '-')}</span>
+        <span>${new Date(x.at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</span>
+      </button>`).join('')
+    : '<p class="mute">Belum ada riwayat.</p>';
+}
+function openHist(i){ show(hist()[i]); }
+
+const dz = $('dz');
+dz.onclick = () => $('file').click();
+['dragenter','dragover'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.add('on'); }));
+['dragleave','drop'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.remove('on'); }));
+dz.addEventListener('drop', ev => addFiles(ev.dataTransfer.files));
+$('file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+document.addEventListener('paste', e => {
+  const files = [...(e.clipboardData?.files || [])];
+  if (files.length) addFiles(files);
+});
+$('go').onclick = analyze;
+
+renderSlots();
+renderHist();
+</script>
+</body>
+</html>
