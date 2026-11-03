@@ -1,5 +1,5 @@
 // Vercel Serverless Function: /api/analyze
-// Env yang dibutuhkan di Vercel:
+// Env di Vercel:
 //   OPENAI_API_KEY  (wajib)
 //   OPENAI_MODEL    (opsional, default gpt-4o)
 
